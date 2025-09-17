@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clothing Inventory Management</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <header>
+    <h1>Clothing Brand Inventory</h1>
+  </header>
+
+  <section id="addRestockSection">
+    <h2>Add / Restock Product</h2>
+    <div class="form-group">
+      <input type="text" id="designNumber" placeholder="Design #">
+      <input type="text" id="style" placeholder="Style">
+      <input type="text" id="color" placeholder="Color">
+      <input type="text" id="size" placeholder="Size">
+      <input type="number" id="pieces" placeholder="Pieces">
+      <button id="addBtn">Add / Restock</button>
+    </div>
+    <div id="addRestockQR"></div>
+  </section>
+
+  <section id="sortInventorySection">
+    <h2>Inventory</h2>
+    <div class="sort-buttons">
+      <button onclick="sortInventory('design')">Sort by Design #</button>
+      <button onclick="sortInventory('style')">Sort by Style</button>
+      <button onclick="sortInventory('color')">Sort by Color</button>
+    </div>
+    <div id="inventoryList"></div>
+  </section>
+
+  <section id="scannerSection">
+    <h2>QR Scanner</h2>
+    <div id="reader" style="width:300px;height:300px;"></div>
+  </section>
+
+  <section>
+    <button onclick="window.open('analysis.html','_blank')">📊 Business Analysis & Growth Reports</button>
+  </section>
+
+  <script src="inventory.js"></script>
+</body>
+</html>
