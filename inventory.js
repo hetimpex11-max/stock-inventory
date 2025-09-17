@@ -1,4 +1,4 @@
-// inventory.js recode for QR display in Add/Restock with download and print, and inventory sorting by multiple criteria
+// Full fix for inventory.js - save new data correctly and generate QR code reliably
 
 let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
 let salesHistory = JSON.parse(localStorage.getItem('salesHistory')) || [];
@@ -18,11 +18,19 @@ function addInventory() {
   const c = document.getElementById('color').value.trim();
   const size = document.getElementById('size').value.trim();
   const pieces = parseInt(document.getElementById('pieces').value);
-  if (!d || !s || !c || !size || isNaN(pieces)) return alert('Enter valid data');
+
+  if (!d || !s || !c || !size || isNaN(pieces) || pieces <= 0) {
+    return alert('Enter valid product details.');
+  }
+
   const sku = makeSKU(d, s, c, size);
-  inventory[sku] = (inventory[sku] || 0) + pieces;
+
+  if(!inventory[sku]) inventory[sku] = 0;
+  inventory[sku] += pieces;
+
   saveInventory();
   generateQRForAddRestock(sku, d);
+  alert(`Added ${pieces} pieces for ${sku}`);
 }
 
 function generateQRForAddRestock(sku, designNumber){
@@ -38,8 +46,10 @@ function generateQRForAddRestock(sku, designNumber){
   const qrDiv = document.createElement('div');
   qrBox.appendChild(qrDiv);
 
-  if(window.QRCode){
-    new QRCode(qrDiv, {text:sku,width:150,height:150,colorDark:'#4A148C',colorLight:'#f5f5f5',correctLevel:QRCode.CorrectLevel.H});
+  try{
+    if(window.QRCode) new QRCode(qrDiv, {text:sku,width:150,height:150,colorDark:'#4A148C',colorLight:'#f5f5f5',correctLevel:QRCode.CorrectLevel.H});
+  } catch(e){
+    console.error('QR Code generation failed', e);
   }
 
   const label = document.createElement('div');
@@ -52,11 +62,14 @@ function generateQRForAddRestock(sku, designNumber){
   downloadBtn.style.marginTop='10px';
   downloadBtn.onclick = function(){
     const img = qrDiv.querySelector('img');
-    const dataURL = img ? img.src : qrDiv.toDataURL('image/png');
-    const a = document.createElement('a'); a.href=dataURL; a.download=`${sku}.png`; a.click();
+    if(img){
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = `${sku}.png`;
+      a.click();
+    } else alert('QR image not generated yet');
   };
   qrBox.appendChild(downloadBtn);
-
   container.appendChild(qrBox);
 }
 
@@ -87,17 +100,30 @@ function sortInventory(by){ renderInventory(by); }
 function openQR(sku){
   const modal=document.createElement('div');
   modal.style.position='fixed'; modal.style.top=0; modal.style.left=0; modal.style.width='100%'; modal.style.height='100%'; modal.style.background='rgba(0,0,0,0.7)'; modal.style.display='flex'; modal.style.justifyContent='center'; modal.style.alignItems='center'; modal.style.zIndex=9999;
-  const qrBox=document.createElement('div'); qrBox.style.background='#fff'; qrBox.style.padding='20px'; qrBox.style.borderRadius='10px'; qrBox.style.textAlign='center';
-  const qrDiv=document.createElement('div'); qrBox.appendChild(qrDiv);
-  if(window.QRCode) new QRCode(qrDiv,{text:sku,width:250,height:250,colorDark:'#4A148C',colorLight:'#f5f5f5',correctLevel:QRCode.CorrectLevel.H});
-  const downloadBtn=document.createElement('button'); downloadBtn.innerText='Download QR'; downloadBtn.style.marginTop='10px';
-  downloadBtn.onclick=function(){ const img=qrDiv.querySelector('img'); const dataURL=img?img.src:qrDiv.toDataURL('image/png'); const a=document.createElement('a'); a.href=dataURL; a.download=`${sku}.png`; a.click(); };
+
+  const qrBox=document.createElement('div');
+  qrBox.style.background='#fff'; qrBox.style.padding='20px'; qrBox.style.borderRadius='10px'; qrBox.style.textAlign='center';
+
+  const qrDiv=document.createElement('div');
+  qrBox.appendChild(qrDiv);
+
+  try{ new QRCode(qrDiv,{text:sku,width:250,height:250,colorDark:'#4A148C',colorLight:'#f5f5f5',correctLevel:QRCode.CorrectLevel.H}); } catch(e){ console.error(e); }
+
+  const downloadBtn=document.createElement('button');
+  downloadBtn.innerText='Download QR'; downloadBtn.style.marginTop='10px';
+  downloadBtn.onclick=function(){ const img=qrDiv.querySelector('img'); if(img){ const a=document.createElement('a'); a.href=img.src; a.download=`${sku}.png`; a.click(); } else alert('QR not ready'); };
   qrBox.appendChild(downloadBtn);
+
   const closeBtn=document.createElement('button'); closeBtn.innerText='Close'; closeBtn.style.marginLeft='10px'; closeBtn.onclick=function(){document.body.removeChild(modal);}; qrBox.appendChild(closeBtn);
+
   modal.appendChild(qrBox); document.body.appendChild(modal);
 }
 
-window.onload=function(){ renderInventory(); startScanner(); };
+window.onload=function(){
+  renderInventory();
+  startScanner();
+  document.getElementById('addBtn').addEventListener('click', addInventory);
+};
 
 function startScanner(){
   if(!window.Html5Qrcode) return;
